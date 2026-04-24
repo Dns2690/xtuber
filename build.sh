@@ -15,8 +15,13 @@ echo "╚═══════════════════════�
 echo ""
 
 # ── 1. Dependencias Python ───────────────────────────────────────────────────
-echo "▶ Instalando dependencias Python..."
-pip3 install -r requirements.txt --quiet
+echo "▶ Configurando entorno virtual Python..."
+if [ ! -d ".venv" ]; then
+    python3 -m venv .venv
+fi
+source .venv/bin/activate
+pip install -r requirements.txt --quiet
+echo "   ✓ Dependencias instaladas en .venv"
 
 # ── 2. Descargar ffmpeg estático para Mac (arm64 + x86_64) ──────────────────
 mkdir -p bin
