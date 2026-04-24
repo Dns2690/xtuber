@@ -48,35 +48,41 @@ a = Analysis(
 
 pyz = PYZ(a.pure)
 
-# ── Ejecutable ────────────────────────────────────────────────────────────────
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.datas,
-    [],
-    name="Xtuber",
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,          # Sin ventana de consola
-    disable_windowed_traceback=False,
-    argv_emulation=False,
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    # icon="assets/icon.icns",   # ← Descomenta y pon tu icono aquí
-)
-
-# ── Bundle .app para Mac ─────────────────────────────────────────────────────
+# ── macOS: onedir + BUNDLE (.app nativo) ─────────────────────────────────────
 if sys.platform == "darwin":
-    app = BUNDLE(
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],                         # ← sin binaries/datas aquí (van en COLLECT)
+        exclude_binaries=True,      # ← onedir mode
+        name="Xtuber",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=False,                  # UPX no compatible con macOS arm64
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        # icon="assets/icon.icns",  # ← Descomenta y pon tu icono aquí
+    )
+
+    coll = COLLECT(
         exe,
+        a.binaries,
+        a.datas,
+        strip=False,
+        upx=False,
+        upx_exclude=[],
+        name="Xtuber",
+    )
+
+    app = BUNDLE(
+        coll,
         name="Xtuber.app",
-        # icon="assets/icon.icns",   # ← Descomenta y pon tu icono aquí
+        # icon="assets/icon.icns",  # ← Descomenta y pon tu icono aquí
         bundle_identifier="com.xtuber.app",
         info_plist={
             "CFBundleShortVersionString": "1.0.0",
@@ -84,4 +90,28 @@ if sys.platform == "darwin":
             "NSHighResolutionCapable":    True,
             "LSMinimumSystemVersion":     "10.13.0",
         },
+    )
+
+# ── Windows: onefile ──────────────────────────────────────────────────────────
+else:
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.datas,
+        [],
+        name="Xtuber",
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        # icon="assets/icon.ico",   # ← Descomenta y pon tu icono aquí
     )
