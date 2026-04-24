@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# PyInstaller
+build/
+dist/
+*.spec.bak
+
+# ffmpeg binarios descargados (grandes, se descargan en el build)
+bin/
+
+# macOS
+.DS_Store
+*.dmg
+
+# Entornos virtuales
+venv/
+.venv/
+env/
+
+# IDEs
+.vscode/
+.idea/
+*.swp

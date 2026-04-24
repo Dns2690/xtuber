@@ -1,0 +1,69 @@
+========================================================
+       ytdl — Instrucciones de instalación
+========================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  MAC
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Requisitos previos:
+  - Homebrew instalado (https://brew.sh)
+  - Python 3 instalado
+
+Paso 1 — Instalar ffmpeg:
+  brew install ffmpeg
+
+Paso 2 — Instalar Python 3.13 con soporte Tk (necesario para la GUI):
+  brew install python-tk@3.13
+
+Paso 3 — Instalar yt-dlp y customtkinter:
+  python3.13 -m pip install yt-dlp customtkinter --break-system-packages
+
+Paso 4 — Correr el programa:
+
+   Versión interfaz gráfica:
+    python3.13 xtuber.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  WINDOWS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Requisitos previos:
+  - Python 3 instalado (https://www.python.org/downloads)
+    IMPORTANTE: durante la instalación marcar la opción
+    "Add Python to PATH"
+    (Python en Windows ya incluye soporte Tk por defecto)
+
+Paso 1 — Instalar ffmpeg:
+  winget install ffmpeg
+
+Paso 2 — Instalar yt-dlp y customtkinter:
+  pip install yt-dlp customtkinter
+
+Paso 3 — Correr el programa:
+  Versión interfaz gráfica:
+    python xtuber.py
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  NOTAS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- Los videos se guardan automáticamente en tu carpeta
+  Descargas / Downloads.
+
+- Si YouTube deja de funcionar en el futuro, actualiza
+  yt-dlp con:
+    Mac:     python3.13 -m pip install -U yt-dlp --break-system-packages
+    Windows: pip install -U yt-dlp
+
+- Los scripts no requieren instalación propia, basta con
+  tener los archivos xtuber.py en cualquier
+  carpeta.
+
+- En Mac, usar siempre python3.13 en lugar de python3
+  para garantizar compatibilidad con la interfaz gráfica.
+
+========================================================
