@@ -1,19 +1,13 @@
 # ============================================================
 #  .github/workflows/release.yml
 #
-#  Workflow de GitHub Actions para Xtuber.
+#  Se activa al hacer push de un tag v*.*.*  (ej: git tag v1.1.0)
+#    1. Compila Xtuber en Mac Apple Silicon e Intel (→ .dmg)
+#    2. Compila Xtuber en Windows (→ .exe)
+#    3. Crea un GitHub Release y sube los archivos
 #
-#  Se activa automáticamente cuando haces push de un tag v*.*.*
-#  Ejemplo:
-#    git tag v1.1.0
-#    git push origin v1.1.0
-#
-#  El workflow:
-#    1. Compila Xtuber en Mac (→ Xtuber-mac.dmg)
-#    2. Compila Xtuber en Windows (→ Xtuber-windows.exe)
-#    3. Crea un GitHub Release y sube ambos archivos
-#
-#  Los usuarios solo tienen que descargar el archivo de su plataforma.
+#  También se puede lanzar a mano desde la pestaña Actions
+#  (workflow_dispatch): compila y deja los artefactos sin publicar.
 # ============================================================
 
 name: Build & Release
@@ -21,130 +15,92 @@ name: Build & Release
 on:
   push:
     tags:
-      - "v*.*.*"    # Ej: v1.0.0, v1.2.3
+      - "v*.*.*"
+  workflow_dispatch:
 
 jobs:
-  # ─────────────────────────────────────────────────────────────────────────
-  #  BUILD MAC
-  # ─────────────────────────────────────────────────────────────────────────
   build-mac:
-    name: Build macOS
-    runs-on: macos-latest
+    name: Build macOS (${{ matrix.arch }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-latest       # Apple Silicon
+            arch: arm64
+          - runner: macos-15-intel     # Intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurar Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
-      - name: Instalar dependencias Python
-        run: pip install -r requirements.txt
+      - name: Build
+        run: bash build.sh
 
-      - name: Descargar ffmpeg para Mac
-        run: |
-          mkdir -p bin
-          curl -L "https://evermeet.cx/ffmpeg/getrelease/ffmpeg/zip" -o /tmp/ffmpeg_mac.zip
-          unzip -o /tmp/ffmpeg_mac.zip -d /tmp/ffmpeg_mac
-          mv /tmp/ffmpeg_mac/ffmpeg bin/ffmpeg
-          chmod +x bin/ffmpeg
-
-      - name: Build con PyInstaller
-        run: pyinstaller xtuber.spec --noconfirm
-
-      - name: Crear DMG
-        run: |
-          hdiutil create \
-            -volname "Xtuber" \
-            -srcfolder "dist/Xtuber.app" \
-            -ov -format UDZO \
-            "dist/Xtuber-mac.dmg"
-
-      - name: Subir artefacto Mac
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: Xtuber-mac
-          path: dist/Xtuber-mac.dmg
+          name: Xtuber-mac-${{ matrix.arch }}
+          path: dist/Xtuber-mac-${{ matrix.arch }}.dmg
 
-  # ─────────────────────────────────────────────────────────────────────────
-  #  BUILD WINDOWS
-  # ─────────────────────────────────────────────────────────────────────────
   build-windows:
     name: Build Windows
     runs-on: windows-latest
 
     steps:
-      - name: Checkout código
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Configurar Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
-      - name: Instalar dependencias Python
-        run: pip install -r requirements.txt
+      - name: Build
+        run: .\build_windows.bat
+        shell: cmd
 
-      - name: Descargar ffmpeg para Windows
-        run: |
-          New-Item -ItemType Directory -Force -Path bin
-          $url = "https://github.com/GyanD/codexffmpeg/releases/download/7.1/ffmpeg-7.1-essentials_build.zip"
-          Invoke-WebRequest -Uri $url -OutFile "$env:TEMP\ffmpeg_win.zip"
-          Expand-Archive -Path "$env:TEMP\ffmpeg_win.zip" -DestinationPath "$env:TEMP\ffmpeg_win" -Force
-          Get-ChildItem -Recurse "$env:TEMP\ffmpeg_win" -Filter "ffmpeg.exe" | Select-Object -First 1 | Copy-Item -Destination "bin\ffmpeg.exe"
-        shell: powershell
-
-      - name: Build con PyInstaller
-        run: pyinstaller xtuber.spec --noconfirm
-
-      - name: Renombrar exe para release
+      - name: Renombrar exe
         run: Move-Item dist\Xtuber.exe dist\Xtuber-windows.exe
         shell: powershell
 
-      - name: Subir artefacto Windows
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: Xtuber-windows
           path: dist/Xtuber-windows.exe
 
-  # ─────────────────────────────────────────────────────────────────────────
-  #  CREAR GITHUB RELEASE
-  # ─────────────────────────────────────────────────────────────────────────
   release:
     name: Crear Release
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-mac, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
 
     steps:
-      - name: Descargar artefactos
-        uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v4
         with:
           path: artifacts
 
-      - name: Publicar Release en GitHub
-        uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@v2
         with:
           name: "Xtuber ${{ github.ref_name }}"
           body: |
             ## Xtuber ${{ github.ref_name }}
 
-            ### Descargas
             | Plataforma | Archivo |
             |---|---|
-            | 🍎 macOS | `Xtuber-mac.dmg` |
+            | 🍎 Mac con Apple Silicon (M1/M2/M3/M4) | `Xtuber-mac-arm64.dmg` |
+            | 🍎 Mac con Intel | `Xtuber-mac-x86_64.dmg` |
             | 🪟 Windows | `Xtuber-windows.exe` |
 
-            **Instalación:**
-            - **Mac**: Abre el `.dmg` y arrastra `Xtuber.app` a Aplicaciones
-            - **Windows**: Descarga `Xtuber-windows.exe` y ejecútalo directamente (no requiere instalación)
+            **Instalación**
+            - **Mac**: abre el `.dmg` y arrastra `Xtuber.app` a Aplicaciones. La primera vez: clic derecho → Abrir (o Ajustes del Sistema → Privacidad y seguridad → "Abrir igualmente").
+            - **Windows**: ejecuta `Xtuber-windows.exe`. Si SmartScreen avisa: "Más información" → "Ejecutar de todas formas".
 
-            > yt-dlp y ffmpeg están incluidos. No necesitas instalar nada.
+            > yt-dlp, ffmpeg y deno van incluidos. yt-dlp se actualiza solo en segundo plano.
           files: |
-            artifacts/Xtuber-mac/Xtuber-mac.dmg
+            artifacts/Xtuber-mac-arm64/Xtuber-mac-arm64.dmg
+            artifacts/Xtuber-mac-x86_64/Xtuber-mac-x86_64.dmg
             artifacts/Xtuber-windows/Xtuber-windows.exe
-          draft: false
-          prerelease: false

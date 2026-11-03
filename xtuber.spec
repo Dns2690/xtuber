@@ -1,43 +1,54 @@
 # xtuber.spec
-# Archivo de configuración para PyInstaller.
-# Genera un ejecutable que incluye Python, todas las dependencias y ffmpeg.
+# Configuración de PyInstaller: genera un ejecutable con Python, todas las
+# dependencias y los binarios externos (ffmpeg, ffprobe y deno).
 #
 # Uso:
-#   pyinstaller xtuber.spec
+#   pyinstaller xtuber.spec --noconfirm
 #
-# Requiere que los binarios de ffmpeg estén en la carpeta ./bin/
-#   Mac:     bin/ffmpeg  (sin extensión, chmod +x)
-#   Windows: bin/ffmpeg.exe
+# Los binarios deben estar en ./bin/ (build.sh / build_windows.bat los descargan):
+#   Mac:     bin/ffmpeg  bin/ffprobe  bin/deno
+#   Windows: bin/ffmpeg.exe  bin/ffprobe.exe  bin/deno.exe
 
 import os
+import re
 import sys
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 
-# ── Datos de CustomTkinter (fuentes, temas, imágenes) ────────────────────────
-ctk_datas = collect_data_files("customtkinter", include_py_files=False)
+# ── Versión (fuente única: VERSION en xtuber.py) ─────────────────────────────
+with open("xtuber.py", encoding="utf-8") as fh:
+    VERSION = re.search(r'^VERSION\s*=\s*"([^"]+)"', fh.read(), re.M).group(1)
 
-# ── Datos de yt-dlp ──────────────────────────────────────────────────────────
-ytdlp_datas = collect_data_files("yt_dlp")
+# ── Binarios externos ────────────────────────────────────────────────────────
+ext = ".exe" if sys.platform == "win32" else ""
+binaries = []
+for tool in ("ffmpeg", "ffprobe", "deno"):
+    path = os.path.join("bin", tool + ext)
+    if not os.path.isfile(path):
+        raise SystemExit(f"Falta {path}. Ejecuta el script de build para descargarlo.")
+    binaries.append((path, "bin"))
 
-# ── Binarios de ffmpeg (según plataforma) ────────────────────────────────────
-if sys.platform == "win32":
-    ffmpeg_binaries = [("bin/ffmpeg.exe", "bin")]
-else:
-    ffmpeg_binaries = [("bin/ffmpeg", "bin")]
+# ── Datos ────────────────────────────────────────────────────────────────────
+datas = (
+    collect_data_files("customtkinter", include_py_files=False)
+    + collect_data_files("yt_dlp")
+    + collect_data_files("yt_dlp_ejs")   # scripts JS para el reto de YouTube
+    + collect_data_files("certifi")      # certificados raíz para HTTPS
+    + copy_metadata("yt-dlp")            # permite leer la versión incluida
+)
 
-# ── Análisis ─────────────────────────────────────────────────────────────────
+hiddenimports = (
+    collect_submodules("yt_dlp")
+    + collect_submodules("yt_dlp_ejs")
+    + ["customtkinter", "certifi", "brotli", "mutagen", "Cryptodome",
+       "websockets", "requests", "urllib3"]
+)
+
 a = Analysis(
     ["xtuber.py"],
     pathex=[],
-    binaries=ffmpeg_binaries,
-    datas=ctk_datas + ytdlp_datas,
-    hiddenimports=[
-        "customtkinter",
-        "yt_dlp",
-        "yt_dlp.extractor",
-        "yt_dlp.postprocessor",
-        *collect_submodules("yt_dlp"),
-    ],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -53,20 +64,19 @@ if sys.platform == "darwin":
     exe = EXE(
         pyz,
         a.scripts,
-        [],                         # ← sin binaries/datas aquí (van en COLLECT)
-        exclude_binaries=True,      # ← onedir mode
+        [],
+        exclude_binaries=True,
         name="Xtuber",
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
-        upx=False,                  # UPX no compatible con macOS arm64
+        upx=False,
         console=False,
         disable_windowed_traceback=False,
         argv_emulation=False,
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        # icon="assets/icon.icns",  # ← Descomenta y pon tu icono aquí
     )
 
     coll = COLLECT(
@@ -82,17 +92,18 @@ if sys.platform == "darwin":
     app = BUNDLE(
         coll,
         name="Xtuber.app",
-        # icon="assets/icon.icns",  # ← Descomenta y pon tu icono aquí
         bundle_identifier="com.xtuber.app",
         info_plist={
-            "CFBundleShortVersionString": "1.0.0",
-            "CFBundleVersion":            "1.0.0",
+            "CFBundleName":               "Xtuber",
+            "CFBundleDisplayName":        "Xtuber",
+            "CFBundleShortVersionString": VERSION,
+            "CFBundleVersion":            VERSION,
             "NSHighResolutionCapable":    True,
-            "LSMinimumSystemVersion":     "10.13.0",
+            "LSMinimumSystemVersion":     "11.0",
         },
     )
 
-# ── Windows: onefile ──────────────────────────────────────────────────────────
+# ── Windows: onefile ─────────────────────────────────────────────────────────
 else:
     exe = EXE(
         pyz,
@@ -104,7 +115,7 @@ else:
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
-        upx=True,
+        upx=False,   # UPX corrompe deno/ffmpeg y dispara falsos positivos de antivirus
         upx_exclude=[],
         runtime_tmpdir=None,
         console=False,
@@ -113,5 +124,4 @@ else:
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
-        # icon="assets/icon.ico",   # ← Descomenta y pon tu icono aquí
     )

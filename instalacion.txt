@@ -1,5 +1,8 @@
 ========================================================
-       ytdl — Instrucciones de instalación
+       Xtuber — Instalación para desarrollo
+
+  (Usuarios finales: descarguen el .dmg/.exe desde Releases,
+   no necesitan instalar nada de esto.)
 ========================================================
 
 
@@ -11,14 +14,14 @@ Requisitos previos:
   - Homebrew instalado (https://brew.sh)
   - Python 3 instalado
 
-Paso 1 — Instalar ffmpeg:
-  brew install ffmpeg
+Paso 1 — Instalar ffmpeg y deno (deno es necesario para YouTube):
+  brew install ffmpeg deno
 
 Paso 2 — Instalar Python 3.13 con soporte Tk (necesario para la GUI):
   brew install python-tk@3.13
 
 Paso 3 — Instalar yt-dlp y customtkinter:
-  python3.13 -m pip install yt-dlp customtkinter --break-system-packages
+  python3.13 -m pip install 'yt-dlp[default]' customtkinter==5.2.2 --break-system-packages
 
 Paso 4 — Correr el programa:
 
@@ -36,11 +39,12 @@ Requisitos previos:
     "Add Python to PATH"
     (Python en Windows ya incluye soporte Tk por defecto)
 
-Paso 1 — Instalar ffmpeg:
+Paso 1 — Instalar ffmpeg y deno (deno es necesario para YouTube):
   winget install ffmpeg
+  winget install DenoLand.Deno
 
 Paso 2 — Instalar yt-dlp y customtkinter:
-  pip install yt-dlp customtkinter
+  pip install "yt-dlp[default]" customtkinter==5.2.2
 
 Paso 3 — Correr el programa:
   Versión interfaz gráfica:
@@ -56,8 +60,9 @@ Paso 3 — Correr el programa:
 
 - Si YouTube deja de funcionar en el futuro, actualiza
   yt-dlp con:
-    Mac:     python3.13 -m pip install -U yt-dlp --break-system-packages
-    Windows: pip install -U yt-dlp
+    Mac:     python3.13 -m pip install -U 'yt-dlp[default]' --break-system-packages
+    Windows: pip install -U "yt-dlp[default]"
+  (La versión empaquetada .dmg/.exe se actualiza sola.)
 
 - Los scripts no requieren instalación propia, basta con
   tener los archivos xtuber.py en cualquier

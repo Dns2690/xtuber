@@ -1,72 +1,58 @@
 # Xtuber — Descargador de YouTube
 
-Aplicación de escritorio para descargar videos de YouTube. **No requiere instalar nada** — Python, yt-dlp y ffmpeg están incluidos dentro del ejecutable.
-
----
+Aplicación de escritorio para descargar videos de YouTube en MP4 o audio en MP3. **No requiere instalar nada**: Python, yt-dlp, ffmpeg y deno van incluidos dentro del ejecutable.
 
 ## Descargar
 
-Ve a la sección [**Releases**](../../releases) y descarga el archivo de tu plataforma:
+Ve a [**Releases**](../../releases) y descarga el archivo de tu equipo:
 
-| Plataforma | Archivo | Instalación |
-|---|---|---|
-| 🍎 **macOS** | `Xtuber-mac.dmg` | Abre el DMG y arrastra a Aplicaciones |
-| 🪟 **Windows** | `Xtuber-windows.exe` | Doble clic y listo |
+| Plataforma | Archivo |
+|---|---|
+| 🍎 Mac con Apple Silicon (M1/M2/M3/M4) | `Xtuber-mac-arm64.dmg` |
+| 🍎 Mac con Intel | `Xtuber-mac-x86_64.dmg` |
+| 🪟 Windows | `Xtuber-windows.exe` |
 
----
+**Mac:** abre el `.dmg` y arrastra `Xtuber.app` a Aplicaciones. Como la app no está notarizada por Apple, la primera vez macOS la bloquea: ve a *Ajustes del Sistema → Privacidad y seguridad* y pulsa **"Abrir igualmente"**.
 
-## Actualizaciones automáticas
+**Windows:** ejecuta el `.exe`. Si SmartScreen avisa, pulsa *Más información → Ejecutar de todas formas*.
 
-Xtuber verifica al iniciar si hay una versión nueva disponible y muestra una notificación con el enlace de descarga.
+## Funciones
 
----
+- Lista las resoluciones reales del video (hasta 4K/8K) y audio MP3.
+- Prefiere H.264 + AAC, así el MP4 se reproduce en QuickTime, Windows y móviles.
+- Barra de progreso con velocidad y tiempo restante; botón para cancelar.
+- Carpeta de destino configurable y botón "Mostrar archivo".
+- **yt-dlp se actualiza solo**: al iniciar busca la última versión oficial, la verifica (SHA-256) y la usa en el siguiente arranque. Así la app sigue funcionando cuando YouTube cambia.
+- Aviso de nuevas versiones de Xtuber.
 
 ## Desarrollo
 
-### Requisitos
 ```bash
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
+python xtuber.py
 ```
 
-### Correr en modo desarrollo
+En modo desarrollo usa el `ffmpeg` del sistema y `deno`, `node` o `bun` si están instalados (`brew install ffmpeg deno`). Sin un runtime JavaScript, YouTube entrega muy pocos formatos.
+
+### Build local
+
 ```bash
-python3 xtuber.py
+bash build.sh            # Mac → dist/Xtuber.app y dist/Xtuber-mac-<arch>.dmg
 ```
-
-### Build local (Mac)
-```bash
-bash build.sh
-# Genera: dist/Xtuber.app  y  dist/Xtuber-mac.dmg
-```
-
-### Build local (Windows)
 ```bat
-build_windows.bat
-:: Genera: dist\Xtuber.exe
+build_windows.bat        :: Windows → dist\Xtuber.exe
 ```
 
-### Publicar una nueva versión (GitHub Actions)
+Los scripts descargan ffmpeg, ffprobe y deno nativos para la arquitectura del equipo y empaquetan el yt-dlp más reciente.
 
-Los builds se generan **automáticamente** en Mac y Windows al hacer push de un tag:
+### Publicar una versión
 
 ```bash
-# 1. Editar VERSION en xtuber.py (ej: "1.1.0")
-# 2. Commit y tag
-git add .
-git commit -m "release: v1.1.0"
-git tag v1.1.0
+# 1. Cambiar VERSION en xtuber.py (ej: "1.2.0") — el spec la toma de ahí
+git commit -am "release: v1.2.0"
+git tag v1.2.0
 git push origin main --tags
 ```
 
-GitHub Actions compilará ambas plataformas y publicará el Release automáticamente.
-
----
-
-## Configuración del auto-updater
-
-Edita las siguientes líneas en `xtuber.py` para apuntar a tu repositorio:
-
-```python
-VERSION     = "1.0.0"        # ← Versión actual
-GITHUB_REPO = "TU_USUARIO/xtuber"  # ← Tu usuario y repo de GitHub
-```
+GitHub Actions compila Mac (Apple Silicon e Intel) y Windows y publica el Release.
